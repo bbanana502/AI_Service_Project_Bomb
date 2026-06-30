@@ -98,22 +98,42 @@ def get_assessment_priority(db: Session):
 def get_user_report(db: Session):
     subjects = db.query(models.Subject).all()
     report_data = []
+    all_stress_scores = []
 
     for subject in subjects:
         stress_scores = []
+        time_spent = []
+        
         for assessment in subject.assessments:
             if assessment.user_stress_score is not None:
-                stress_scores.append(assessment.user_stress_score)
+                stress_scores.append(float(assessment.user_stress_score))
+                all_stress_scores.append(float(assessment.user_stress_score))
+            if assessment.actual_time_spent is not None:
+                time_spent.append(float(assessment.actual_time_spent))
 
         if len(stress_scores) > 0:
             avg_stress = sum(stress_scores) / len(stress_scores)
+            max_stress = max(stress_scores)
+            min_stress = min(stress_scores)
+            avg_time = sum(time_spent) / len(time_spent) if time_spent else 0.0
+            
             report_data.append({
                 "과목명": subject.name,
-                "평균스트레스": round(avg_stress, 2),
-                "평가개수": len(stress_scores),
+                "평균_스트레스": float(round(avg_stress, 2)),
+                "최고_스트레스": float(round(max_stress, 1)),
+                "최저_스트레스": float(round(min_stress, 1)),
+                "평가_개수": int(len(stress_scores)),
+                "평균_소요시간": float(round(avg_time, 1)),
             })
 
+    # 스트레스가 높은 순으로 정렬
+    report_data.sort(key=lambda x: x["평균_스트레스"], reverse=True)
+    
+    # 전체 통계
+    overall_avg_stress = float(round(sum(all_stress_scores) / len(all_stress_scores), 2)) if all_stress_scores else 0.0
+    
     return {
         "보고서": report_data,
+        "전체_평균_스트레스": overall_avg_stress,
         "요약": "스트레스 지수가 높은 과목부터 먼저 확인하세요.",
     }

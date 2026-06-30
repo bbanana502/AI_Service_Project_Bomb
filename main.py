@@ -1,6 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+import os
 
 import models
 import schemas
@@ -12,6 +16,15 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="수행평가 폭탄주의보",
     description="마감이 몰린 수행평가를 확인하고 우선순위를 정리하는 수행평가 관리 프로그램"
+)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 def get_db():
@@ -80,6 +93,16 @@ def get_user_report(db: Session = Depends(get_db)):
     # 과목별 사용자 스트레스 평균과 평가 개수를 집계해 리포트 형태로 반환하는 엔드포인트
     # 각 과목의 연관 수행평가 중 스트레스 점수가 존재하는 항목만 집계에 포함
     return service.get_user_report(db)
+
+# 정적 파일 제공
+template_dir = os.path.dirname(os.path.abspath(__file__))
+app.mount("/static", StaticFiles(directory=os.path.join(template_dir, "templates")), name="static")
+
+@app.get("/")
+async def root():
+    """프론트엔드 페이지 제공"""
+    template_path = os.path.join(template_dir, "templates", "index.html")
+    return FileResponse(template_path)
 
 if __name__ == "__main__":
     import uvicorn

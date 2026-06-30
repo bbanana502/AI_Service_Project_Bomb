@@ -33,8 +33,13 @@ def seed_data(num_records=100):
         
         due_date = datetime.now() + timedelta(days=random.randint(-30, 30))
         
-        stress = 1.5 + (weight / 20.0) + (overlapping * 0.5) + random.uniform(-0.5, 0.5)
-        stress = max(1.0, min(5.0, stress))
+        # 스트레스 점수: 1-10 범위
+        # 반영비율, 겹치는 과제 수, 무작위 요소를 종합적으로 고려
+        stress = 2 + (weight / 10.0) + (overlapping * 0.8) + random.uniform(-1, 1)
+        stress = max(1.0, min(10.0, stress))
+        
+        # 실제 소요 시간: 1-15시간 범위
+        actual_time = round(random.uniform(1.0, 15.0), 1)
         
         assessment = models.PerformanceAssessment(
             subject_id=chosen_subject.id,
@@ -42,7 +47,7 @@ def seed_data(num_records=100):
             weight=weight,
             due_date=due_date,
             overlapping_tasks=overlapping,
-            actual_time_spent=round(random.uniform(1.0, 10.0), 1),
+            actual_time_spent=actual_time,
             user_stress_score=round(stress, 1)
         )
         db.add(assessment)
